@@ -1,58 +1,76 @@
 import React from "react"
 import { GetStaticProps } from "next"
-import Layout from "../components/Layout"
-import Post, { PostProps } from "../components/Post"
+import Billboard, { BillBoardProps } from "../components/Billboard"
+import prisma from '../lib/prisma'
+import Form from "../components/Form"
+import { Typography, Layout, theme, Input } from 'antd';
+
+const { Header, Content, Footer } = Layout;
+const { Title } = Typography;
+
+const headerStyle: React.CSSProperties = {
+  textAlign: 'center',
+  color: 'rgb(41 149 68)',
+  height: 64,
+  paddingInline: 50,
+  lineHeight: '64px',
+  fontSize: 50,
+  backgroundColor:'skyblue'
+};
 
 export const getStaticProps: GetStaticProps = async () => {
-  const feed = [
-    {
-      id: "1",
-      title: "Prisma is the perfect ORM for Next.js",
-      content: "[Prisma](https://github.com/prisma/prisma) and Next.js go _great_ together!",
-      published: false,
-      author: {
-        name: "Nikolas Burk",
-        email: "burk@prisma.io",
+  let billBoard = null;
+  try {
+    billBoard = await prisma.billBoardPost.findFirst({
+      include: {
+        author: {
+          select: { name: true, email: true },
+        },
       },
-    },
-  ]
+      where: {
+        status: {
+          equals: 2
+        }
+      },
+      orderBy: [
+        {
+          amount: 'desc'
+        }
+      ],
+      take: 1
+    });
+  } catch (e) {
+
+  }
+  
   return { 
-    props: { feed }, 
+    props: { billBoard: billBoard ? billBoard : {} }, 
     revalidate: 10 
   }
 }
 
 type Props = {
-  feed: PostProps[]
+  billBoard: BillBoardProps
 }
 
 const Blog: React.FC<Props> = (props) => {
+  const {
+    token: { colorBgContainer },
+  } = theme.useToken();
+
   return (
-    <Layout>
-      <div className="page">
-        <h1>Public Feed</h1>
-        <main>
-          {props.feed.map((post) => (
-            <div key={post.id} className="post">
-              <Post post={post} />
-            </div>
-          ))}
-        </main>
-      </div>
-      <style jsx>{`
-        .post {
-          background: white;
-          transition: box-shadow 0.1s ease-in;
-        }
+    <Layout className="layout">
+      <Header style={headerStyle}>
+       Internet Billboard
+      </Header>
 
-        .post:hover {
-          box-shadow: 1px 1px 3px #aaa;
-        }
+      <Content style={{ padding: '0 50px' ,width:'1440px',backgroundColor:'skyblue'}}>
+        <Billboard data={props.billBoard} />
+        <Form />
+        <div id="payment_area"></div>
+      </Content>
 
-        .post + .post {
-          margin-top: 2rem;
-        }
-      `}</style>
+      <Footer style={{ textAlign: 'center' ,backgroundColor:'skyBlue' }}> ©2023 Created by Aishwarya Adyanthaya</Footer>
     </Layout>
   )
 }
